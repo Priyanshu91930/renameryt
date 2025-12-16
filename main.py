@@ -1,8 +1,13 @@
 
 import asyncio
+import sys
 from bot import Bot, web_app
 from pyrogram import compose
 from config import *
+
+# Fix for Windows event loop
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 async def main():
     app = []
