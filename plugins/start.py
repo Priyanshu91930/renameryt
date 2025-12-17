@@ -57,22 +57,38 @@ async def start_command(client: Client, message: Message):
 
             short_photo = client.messages.get("SHORT_PIC", "")
             short_caption = client.messages.get("SHORT_MSG", "")
-            tutorial_link = getattr(client, 'tutorial_link', "https://t.me/How_to_Download_7x/26")
+            tutorial_link = getattr(client, 'tutorial_link', "")
 
-            await client.send_photo(
-                chat_id=message.chat.id,
-                photo=short_photo,
-                caption=short_caption,
-                reply_markup=InlineKeyboardMarkup([
-                    [
-                        InlineKeyboardButton("• ᴏᴘᴇɴ ʟɪɴᴋ", url=short_link),
-                        InlineKeyboardButton("ᴛᴜᴛᴏʀɪᴀʟ •", url=tutorial_link)
-                    ],
-                    [
-                        InlineKeyboardButton(" • ʙᴜʏ ᴘʀᴇᴍɪᴜᴍ •", url="https://t.me/Premium_Fliix/21")
-                    ]
-                ])
-            )
+            # Validate tutorial_link - must be a valid URL
+            if not tutorial_link or not tutorial_link.startswith(("https://", "http://")):
+                tutorial_link = "https://t.me/How_to_Download_7x/26"
+
+            # Validate short_link - must be a valid URL
+            if not short_link or not short_link.startswith(("https://", "http://")):
+                client.LOGGER(__name__, client.name).warning(f"Invalid short_link: {short_link}")
+                return await message.reply("⚠️ Unable to generate link. Please try again.")
+
+            # Log URLs for debugging
+            client.LOGGER(__name__, client.name).info(f"URLs - short: {short_link}, tutorial: {tutorial_link}")
+
+            try:
+                await client.send_photo(
+                    chat_id=message.chat.id,
+                    photo=short_photo,
+                    caption=short_caption,
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("• ᴏᴘᴇɴ ʟɪɴᴋ", url=short_link),
+                            InlineKeyboardButton("ᴛᴜᴛᴏʀɪᴀʟ •", url=tutorial_link)
+                        ],
+                        [
+                            InlineKeyboardButton(" • ʙᴜʏ ᴘʀᴇᴍɪᴜᴍ •", url="https://t.me/Premium_Fliix/21")
+                        ]
+                    ])
+                )
+            except Exception as e:
+                client.LOGGER(__name__, client.name).error(f"send_photo failed: {e}, short_link={short_link}, tutorial={tutorial_link}")
+                await message.reply(f"⚠️ Link error. Try again later.\n\nDirect: {short_link}")
             return  # prevent sending actual files
 
         # 6. Decode and prepare file IDs
