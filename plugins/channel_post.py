@@ -116,7 +116,7 @@ async def channel_post(client: Client, message: Message):
                 media_group = []
                 caption_text = (
                     f"<b>Here is your link</b>\n\n"
-                    f"<a href='{link}'>📎 Click here to access</a>"
+                    f"{link}"
                 )
                 
                 for i, ss_path in enumerate(screenshot_paths):
