@@ -8,7 +8,7 @@ OWNER_ID = 1246987713
 
 MSG_EFFECT = 5046509860389126442
 
-SHORT_URL = "vplink.com" # shortner url 
+SHORT_URL = "vplink.in" # shortner url 
 SHORT_API = "35591ad98834a002e1fe0b3b4acc6d84ef401782" 
 SHORT_TUT = ""
 
@@ -35,7 +35,7 @@ AUTO_DEL = 300
 # Admin IDs
 ADMINS = [1246987713]
 # Bot Settings
-DISABLE_BTN = True
+DISABLE_BTN = False
 PROTECT = True
 
 # Messages Configuration
