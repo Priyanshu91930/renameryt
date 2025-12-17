@@ -56,7 +56,9 @@ async def start_command(client: Client, message: Message):
                 return await message.reply("Couldn't generate short link.")
 
             short_photo = client.messages.get("SHORT_PIC", "")
-            short_caption = client.messages.get("SHORT_MSG", "")
+            short_caption = client.messages.get("SHORT_MSG", "").format(
+                first=message.from_user.first_name
+            )
             tutorial_link = getattr(client, 'tutorial_link', "")
 
             # Validate tutorial_link - must be a valid URL
