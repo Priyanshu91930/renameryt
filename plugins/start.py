@@ -367,5 +367,47 @@ async def my_plan(client: Client, message: Message):
             "🔸 Plan: Free\n"
             "🔸 Request: Disabled\n\n"
             "🔓 Unlock Premium to get more benefits\n"
-            "Contact: @priyanshu190"
+            "Use /buyplan to see our plans"
         )
+
+#===============================================================#
+
+@Client.on_message(filters.command('buyplan') & filters.private)
+async def buy_plan_command(client: Client, message: Message):
+    """Display fee structure and payment instructions for ads-free subscription"""
+    
+    plan_text = """
+<b>💎 PREMIUM PLANS - AD-FREE EXPERIENCE</b>
+
+<b>📋 Pricing:</b>
+┌─────────────────────────
+│ 🗓️ <b>Daily</b>     →  ₹5/day
+│ 📅 <b>Weekly</b>    →  ₹25/week
+│ 📆 <b>Monthly</b>   →  ₹79/month
+└─────────────────────────
+
+<b>✨ Benefits:</b>
+• No ads or shortlinks
+• Direct file access
+• Request feature enabled
+• Priority support
+
+<b>💳 How to Pay:</b>
+1️⃣ Make payment via UPI/Paytm/PhonePe
+2️⃣ Take a screenshot of payment
+3️⃣ Send screenshot to owner
+4️⃣ Your premium will be activated within 24hrs!
+
+<b>📞 Contact owner below to get payment details!</b>
+"""
+    
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📞 Contact Owner", url="https://t.me/MissFilo_bot")],
+        [InlineKeyboardButton("🔙 Back to Start", callback_data="home")]
+    ])
+    
+    await message.reply_text(
+        plan_text,
+        reply_markup=buttons,
+        disable_web_page_preview=True
+    )
