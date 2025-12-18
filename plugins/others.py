@@ -285,7 +285,7 @@ async def quick_remove_db(client: Client, message: Message):
 
 @Client.on_callback_query(filters.regex('^home$'))
 async def home(client: Client, query: CallbackQuery):
-    buttons = [[InlineKeyboardButton("Help", callback_data = "about"), InlineKeyboardButton("Close", callback_data = "close")]]
+    buttons = [[InlineKeyboardButton("⚡ Open Viral Verse", url="https://t.me/premiumcollection467832_bot/start"), InlineKeyboardButton("📢 Join Our Channel", url="https://t.me/Anihubyt25")]]
     if query.from_user.id in client.admins:
         buttons.insert(0, [InlineKeyboardButton("⛩️ ꜱᴇᴛᴛɪɴɢꜱ ⛩️", callback_data="settings")])
     await query.message.edit_text(
