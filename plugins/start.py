@@ -372,6 +372,9 @@ async def my_plan(client: Client, message: Message):
 
 #===============================================================#
 
+# Payment QR Image URL - Replace with your Telegraph image URL
+PAYMENT_QR_IMAGE = "https://graph.org/file/90fc99d53f517bca4bf81-346bf43a3a17b0a425.jpg"
+
 @Client.on_message(filters.command('buyplan') & filters.private)
 async def buy_plan_command(client: Client, message: Message):
     """Display fee structure and payment instructions for ads-free subscription"""
@@ -393,7 +396,7 @@ async def buy_plan_command(client: Client, message: Message):
 • Priority support
 
 <b>💳 How to Pay:</b>
-1️⃣ Make payment via UPI/Paytm/PhonePe
+1️⃣ Scan the QR code above or use UPI
 2️⃣ Take a screenshot of payment
 3️⃣ Send screenshot to owner
 4️⃣ Your premium will be activated within 24hrs!
@@ -406,8 +409,18 @@ async def buy_plan_command(client: Client, message: Message):
         [InlineKeyboardButton("🔙 Back to Start", callback_data="home")]
     ])
     
-    await message.reply_text(
-        plan_text,
-        reply_markup=buttons,
-        disable_web_page_preview=True
-    )
+    try:
+        await client.send_photo(
+            chat_id=message.chat.id,
+            photo=PAYMENT_QR_IMAGE,
+            caption=plan_text,
+            reply_markup=buttons
+        )
+    except Exception:
+        # Fallback to text if image fails
+        await message.reply_text(
+            plan_text,
+            reply_markup=buttons,
+            disable_web_page_preview=True
+        )
+
