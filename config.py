@@ -40,15 +40,15 @@ PROTECT = True
 
 # Messages Configuration
 MESSAGES = {
-    "START": "<b>›› ʜᴇʏ!!, {first} ~ <blockquote>I am a file storage bot. Send me files and I'll help you organize and share them!</blockquote></b>",
+    "START": "<b>⚡ Welcome to VIRAL VERSE !</b>\n\n<i>Your gateway to premium content, resources, and links shared by our community.</i>\n\n<b>🔥 Features:</b>\n• 📸 Browse posts with images, videos & audio\n• ❤️ React with emojis\n• 💬 Comment and engage with the community\n• 🔗 Share posts with friends\n\n\n<b>👇 Click the button below to open the app!</b>",
     "FSUB": "<b><blockquote>›› ʜᴇʏ ×</blockquote>\n  ʏᴏᴜʀ ғɪʟᴇ ɪs ʀᴇᴀᴅʏ ‼️ ʟᴏᴏᴋs ʟɪᴋᴇ ʏᴏᴜ ʜᴀᴠᴇɴ'ᴛ sᴜʙsᴄʀɪʙᴇᴅ ᴛᴏ ᴏᴜʀ ᴄʜᴀɴɴᴇʟs ʏᴇᴛ, sᴜʙsᴄʀɪʙᴇ ɴᴏᴡ ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs</b>",
     "ABOUT": "<b><blockquote expandable>›› ᴜᴘᴅᴀᴛᴇs ᴄʜᴀɴɴᴇʟ: <a href='https://t.me/Anihubyt25'>Cʟɪᴄᴋ ʜᴇʀᴇ</a> \n›› ᴏᴡɴᴇʀ: @Anihubyt25\n›› ʟᴀɴɢᴜᴀɢᴇ: <a href='https://docs.python.org/3/'>Pʏᴛʜᴏɴ 3</a> \n›› ʟɪʙʀᴀʀʏ: <a href='https://docs.pyrogram.org/'>Pʏʀᴏɢʀᴀᴍ ᴠ2</a> \n›› ᴅᴀᴛᴀʙᴀsᴇ: <a href='https://www.mongodb.com/docs/'>Mᴏɴɢᴏ ᴅʙ</a> \n›› ᴅᴇᴠᴇʟᴏᴘᴇʀ: @Anihubyt25</b></blockquote>",
     "REPLY": "<b>For More Join - @Anihubyt25</b>",
     "SHORT_MSG": "<b>📊 ʜᴇʏ {first}, \n\n‼️ ɢᴇᴛ ᴀʟʟ ꜰɪʟᴇꜱ ɪɴ ᴀ ꜱɪɴɢʟᴇ ʟɪɴᴋ ‼️\n\n ⌯ ʏᴏᴜʀ ʟɪɴᴋ ɪꜱ ʀᴇᴀᴅʏ, ᴋɪɴᴅʟʏ ᴄʟɪᴄᴋ ᴏɴ ᴏᴘᴇɴ ʟɪɴᴋ ʙᴜᴛᴛᴏɴ..</b>",
-    "START_PHOTO": "https://graph.org/file/879291ee8fbc41feecfce-cc326a99bd3dd054cc.jpg",
-    "FSUB_PHOTO": "https://graph.org/file/879291ee8fbc41feecfce-cc326a99bd3dd054cc.jpg",
-    "SHORT_PIC": "https://graph.org/file/879291ee8fbc41feecfce-cc326a99bd3dd054cc.jpg",
-    "SHORT": "https://graph.org/file/879291ee8fbc41feecfce-cc326a99bd3dd054cc.jpg"
+    "START_PHOTO": "https://graph.org/file/8c1586a79388f0a74fa83-8c0e212b265e207a9c.jpg",
+    "FSUB_PHOTO": "https://graph.org/file/8c1586a79388f0a74fa83-8c0e212b265e207a9c.jpg",
+    "SHORT_PIC": "https://graph.org/file/8c1586a79388f0a74fa83-8c0e212b265e207a9c.jpg",
+    "SHORT": "https://graph.org/file/8c1586a79388f0a74fa83-8c0e212b265e207a9c.jpg"
 }
 
 def LOGGER(name: str, client_name: str) -> logging.Logger:

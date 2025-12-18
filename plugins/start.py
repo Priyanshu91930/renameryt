@@ -271,7 +271,7 @@ async def start_command(client: Client, message: Message):
 
     # 9. Normal start message
     else:
-        buttons = [[InlineKeyboardButton("Help", callback_data="about"), InlineKeyboardButton("Close", callback_data='close')]]
+        buttons = [[InlineKeyboardButton("⚡ Open Viral Verse", url="https://t.me/Anihubyt25"), InlineKeyboardButton("📢 Join Our Channel", url="https://t.me/Anihubyt25")]]
         if user_id in client.admins:
             buttons.insert(0, [InlineKeyboardButton("⛩️ ꜱᴇᴛᴛɪɴɢꜱ ⛩️", callback_data="settings")])
 
@@ -314,7 +314,7 @@ async def request_command(client: Client, message: Message):
         return
 
     if not is_user_premium: 
-        BUTTON_URL = "https://t.me/hanime_arena/5"
+        BUTTON_URL = "https://t.me/anihubyt25"
         reply_markup = InlineKeyboardMarkup([
             [InlineKeyboardButton("💎 Upgrade to Premium", url=BUTTON_URL)]
         ])
