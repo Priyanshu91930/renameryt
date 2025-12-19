@@ -22,7 +22,7 @@ WORKERS = 5
 DB_URI = "mongodb+srv://anihubbot:Anihub123@cluster0.tk16ay6.mongodb.net/?appName=Cluster0"
 DB_NAME = "yato"
 
-FSUBS = [-1003645219752,True,5]  # Force Subscription Channels [channel_id, request_enabled, timer_in_minutes] - temporarily disabled
+FSUBS = [[-1003645219752, True, 5]]  # Force Subscription Channels [[channel_id, request_enabled, timer_in_minutes]]
 # Database Channel (Primary)
 DB_CHANNEL = -1003654284775  # just put channel id dont add ""
 # Multiple Database Channels (can be set via bot settings)
