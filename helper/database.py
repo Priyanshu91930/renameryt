@@ -799,3 +799,29 @@ class MongoDB:
     async def revoke_user_access(self, user_id: int):
         """Revoke a user's access token"""
         await self.user_data.delete_one({"_id": f"access_{user_id}"})
+
+    async def get_access_users(self) -> list:
+        """Get list of all users with active access tokens"""
+        current_time = datetime.now()
+        cursor = self.user_data.find({
+            "_id": {"$regex": "^access_"},
+            "expiry": {"$gt": current_time}
+        })
+        users = []
+        async for doc in cursor:
+            user_id = int(doc["_id"].replace("access_", ""))
+            expiry = doc.get("expiry")
+            granted_at = doc.get("granted_at")
+            users.append({
+                "user_id": user_id,
+                "expiry": expiry,
+                "granted_at": granted_at
+            })
+        return users
+
+    async def revoke_all_access(self):
+        """Revoke all access tokens"""
+        result = await self.user_data.delete_many({
+            "_id": {"$regex": "^access_"}
+        })
+        return result.deleted_count

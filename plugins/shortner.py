@@ -298,10 +298,11 @@ async def access_token_panel(client: Client, query: CallbackQuery):
             InlineKeyboardButton('Validity', 'set_token_validity')
         ],
         [
-            InlineKeyboardButton('Stats', 'token_stats'),
-            InlineKeyboardButton('Tutorial', 'set_tutorial_link')
+            InlineKeyboardButton('Users', 'token_users'),
+            InlineKeyboardButton('Stats', 'token_stats')
         ],
         [
+            InlineKeyboardButton('Revoke All', 'revoke_all_tokens'),
             InlineKeyboardButton('◂ Back', 'settings_page_2')
         ]
     ])
@@ -416,4 +417,83 @@ async def token_stats(client: Client, query: CallbackQuery):
     ])
     
     await query.message.edit_text(msg, reply_markup=reply_markup)
+
+#===============================================================#
+
+@Client.on_callback_query(filters.regex("^token_users$"))
+async def token_users(client: Client, query: CallbackQuery):
+    """Display list of users with active access tokens"""
+    if not query.from_user.id in client.admins:
+        return await query.answer('❌ ᴏɴʟʏ ᴀᴅᴍɪɴꜱ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ!', show_alert=True)
+    
+    await query.answer()
+    
+    # Get all users with access
+    users = await client.mongodb.get_access_users()
+    
+    if not users:
+        msg = """<blockquote><b>👥 Access Token Users</b></blockquote>
+
+<i>No users currently have active access tokens.</i>
+
+<b>Users will appear here when they pass through the verification link.</b>"""
+    else:
+        user_list = ""
+        for i, user in enumerate(users[:20], 1):  # Show max 20 users
+            expiry = user['expiry'].strftime("%d/%m %H:%M") if user['expiry'] else "Unknown"
+            user_list += f"<code>{i}. {user['user_id']}</code> - expires: {expiry}\n"
+        
+        if len(users) > 20:
+            user_list += f"\n<i>...and {len(users) - 20} more</i>"
+        
+        msg = f"""<blockquote><b>👥 Access Token Users</b></blockquote>
+
+<b>Active Tokens:</b> {len(users)} users
+
+{user_list}
+<i>To revoke a user's access, use:</i>
+<code>/revoke_access USER_ID</code>"""
+    
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton('🔄 Refresh', 'token_users')],
+        [InlineKeyboardButton('◂ Back', 'access_token')]
+    ])
+    
+    await query.message.edit_text(msg, reply_markup=reply_markup)
+
+#===============================================================#
+
+@Client.on_callback_query(filters.regex("^revoke_all_tokens$"))
+async def revoke_all_tokens(client: Client, query: CallbackQuery):
+    """Revoke all access tokens"""
+    if not query.from_user.id in client.admins:
+        return await query.answer('❌ ᴏɴʟʏ ᴀᴅᴍɪɴꜱ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ!', show_alert=True)
+    
+    # Revoke all
+    count = await client.mongodb.revoke_all_access()
+    
+    await query.answer(f"✓ Revoked {count} access tokens!", show_alert=True)
+    
+    # Refresh the panel
+    await access_token_panel(client, query)
+
+#===============================================================#
+
+@Client.on_message(filters.command('revoke_access') & filters.private)
+async def revoke_access_command(client: Client, message):
+    """Command to revoke a specific user's access"""
+    if message.from_user.id not in client.admins:
+        return await message.reply("❌ Only admins can use this!")
+    
+    if len(message.command) < 2:
+        return await message.reply("**Usage:** `/revoke_access USER_ID`\n\nExample: `/revoke_access 123456789`")
+    
+    try:
+        user_id = int(message.command[1])
+        await client.mongodb.revoke_user_access(user_id)
+        await message.reply(f"✓ **Access revoked for user** `{user_id}`")
+    except ValueError:
+        await message.reply("❌ Invalid user ID. Please provide a valid number.")
+    except Exception as e:
+        await message.reply(f"❌ Error: {e}")
 
