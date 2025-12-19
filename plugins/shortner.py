@@ -92,9 +92,9 @@ async def shortner_panel(client, query_or_message):
     
     reply_markup = InlineKeyboardMarkup([
         [InlineKeyboardButton(f'• {toggle_text} ꜱʜᴏʀᴛɴᴇʀ •', 'toggle_shortner'), InlineKeyboardButton('• ᴀᴅᴅ ꜱʜᴏʀᴛɴᴇʀ •', 'add_shortner')],
-        [InlineKeyboardButton('• ꜱᴇᴛ ᴛᴜᴛᴏʀɪᴀʟ ʟɪɴᴋ •', 'set_tutorial_link'), InlineKeyboardButton('• ᴀᴄᴄᴇꜱꜱ ᴛᴏᴋᴇɴ •', 'access_token')],
+        [InlineKeyboardButton('• ꜱᴇᴛ ᴛᴜᴛᴏʀɪᴀʟ ʟɪɴᴋ •', 'set_tutorial_link')],
         [InlineKeyboardButton('• ᴛᴇꜱᴛ ꜱʜᴏʀᴛɴᴇʀ •', 'test_shortner')],
-        [InlineKeyboardButton('◂ ʙᴀᴄᴋ ᴛᴏ ꜱᴇᴛᴛɪɴɢꜱ', 'settings')] if hasattr(query_or_message, 'message') else []
+        [InlineKeyboardButton('◂ ʙᴀᴄᴋ ᴛᴏ ꜱᴇᴛᴛɪɴɢꜱ', 'settings_page_2')] if hasattr(query_or_message, 'message') else []
     ])
     
     image_url = MESSAGES.get("SHORT", "https://telegra.ph/file/8aaf4df8c138c6685dcee-05d3b183d4978ec347.jpg")
@@ -294,14 +294,15 @@ async def access_token_panel(client: Client, query: CallbackQuery):
     
     reply_markup = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton('Shorteners', 'shortner'),
-            InlineKeyboardButton('Validity', 'set_token_validity'),
+            InlineKeyboardButton('Toggle Status', 'toggle_access_token'),
+            InlineKeyboardButton('Validity', 'set_token_validity')
+        ],
+        [
+            InlineKeyboardButton('Stats', 'token_stats'),
             InlineKeyboardButton('Tutorial', 'set_tutorial_link')
         ],
         [
-            InlineKeyboardButton('Back', 'settings'),
-            InlineKeyboardButton('Toggle Status', 'toggle_access_token'),
-            InlineKeyboardButton('Stats', 'token_stats')
+            InlineKeyboardButton('◂ Back', 'settings_page_2')
         ]
     ])
     
