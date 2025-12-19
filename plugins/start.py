@@ -55,6 +55,10 @@ async def start_command(client: Client, message: Message):
         # Check if user has valid access token
         has_valid_access = await client.mongodb.check_user_access(user_id)
         
+        # DEBUG: Log all conditions
+        client.LOGGER(__name__, client.name).info(f"[ACCESS DEBUG] user_id={user_id}, is_pro={is_user_pro}, is_owner={user_id == OWNER_ID}, is_short_link={is_short_link}")
+        client.LOGGER(__name__, client.name).info(f"[ACCESS DEBUG] access_token_enabled={access_token_enabled}, has_valid_access={has_valid_access}, shortner_enabled={shortner_enabled}")
+        
         # 6. If user came from verification link, grant access token (if access token feature is enabled)
         if is_short_link and access_token_enabled:
             await client.mongodb.grant_user_access(user_id, validity_hours)
@@ -80,6 +84,8 @@ async def start_command(client: Client, message: Message):
                 needs_verification = True
                 use_shortener = True
                 client.LOGGER(__name__, client.name).info(f"Shortner enabled (no access token), sending shortlink to user {user_id}")
+            else:
+                client.LOGGER(__name__, client.name).info(f"[ACCESS DEBUG] No verification needed - access_token_enabled={access_token_enabled}, has_valid_access={has_valid_access}")
             
             if needs_verification:
                 # Build the verification link
