@@ -55,17 +55,32 @@ async def start_command(client: Client, message: Message):
         # Check if user has valid access token
         has_valid_access = await client.mongodb.check_user_access(user_id)
         
-        # 6. If user came from shortlink, grant access token
+        # 6. If user came from shortlink, grant access token (if access token feature is enabled)
         if is_short_link and access_token_enabled:
             await client.mongodb.grant_user_access(user_id, validity_hours)
             has_valid_access = True  # User now has access
+            client.LOGGER(__name__, client.name).info(f"Access granted to user {user_id} for {validity_hours} hours")
 
-        # 7. If user is not premium AND shortner is enabled AND (access token disabled OR no valid access), send short URL
-        if not is_user_pro and user_id != OWNER_ID and not is_short_link and shortner_enabled:
-            # If access token is enabled and user has valid access, skip shortlink
-            if access_token_enabled and has_valid_access:
-                pass  # User has valid access token, proceed to get files
-            else:
+        # 7. Determine if user needs to pass shortlink
+        # Skip for: premium users, owner, users coming from shortlink
+        if not is_user_pro and user_id != OWNER_ID and not is_short_link:
+            
+            # Determine if shortlink is required based on Access Token and Shortner settings
+            needs_shortlink = False
+            
+            if access_token_enabled:
+                # Access Token is ON: User needs shortlink ONLY if they don't have valid access
+                if not has_valid_access:
+                    needs_shortlink = True
+                    client.LOGGER(__name__, client.name).info(f"User {user_id} has no valid access token, sending shortlink")
+                else:
+                    client.LOGGER(__name__, client.name).info(f"User {user_id} has valid access token, skipping shortlink")
+            elif shortner_enabled:
+                # Access Token is OFF but Shortner is ON: Always require shortlink
+                needs_shortlink = True
+                client.LOGGER(__name__, client.name).info(f"Shortner enabled (no access token), sending shortlink to user {user_id}")
+            
+            if needs_shortlink:
                 # User needs to pass shortlink
                 try:
                     short_link = get_short(f"https://t.me/{client.username}?start=yu3elk{base64_string}7", client)
