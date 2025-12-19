@@ -44,10 +44,10 @@ async def start_command(client: Client, message: Message):
         # 3. Check premium status
         is_user_pro = await client.mongodb.is_pro(user_id)
         
-        # 4. Check if shortner is enabled (controls URL shortening only)
+        # 4. Check if shortner is enabled (controls URL shortening for regular file access)
         shortner_enabled = getattr(client, 'shortner_enabled', True)
         
-        # 5. Check Access Token feature (controls bot access)
+        # 5. Check Access Token feature (controls bot access - separate from shortner)
         token_settings = await client.mongodb.get_access_token_settings()
         access_token_enabled = token_settings.get('enabled', False)
         validity_hours = token_settings.get('validity_hours', 12)
@@ -67,29 +67,37 @@ async def start_command(client: Client, message: Message):
             
             # Determine if verification is required
             needs_verification = False
+            use_shortener = False  # Whether to use shortener for the link
             
             if access_token_enabled and not has_valid_access:
                 # Access Token is ON and user doesn't have valid access: Require verification
+                # Access Token ALWAYS uses shortener for revenue (independent of Shortener toggle)
                 needs_verification = True
-                client.LOGGER(__name__, client.name).info(f"User {user_id} has no valid access token, sending verification link")
+                use_shortener = True  # Always shorten for Access Token
+                client.LOGGER(__name__, client.name).info(f"User {user_id} has no valid access token, sending verification shortlink")
             elif not access_token_enabled and shortner_enabled:
                 # Access Token is OFF but Shortner is ON: Always require shortlink (original behavior)
                 needs_verification = True
+                use_shortener = True
                 client.LOGGER(__name__, client.name).info(f"Shortner enabled (no access token), sending shortlink to user {user_id}")
             
             if needs_verification:
                 # Build the verification link
                 raw_link = f"https://t.me/{client.username}?start=yu3elk{base64_string}7"
                 
-                # Use shortener only if enabled, otherwise use direct link
-                if shortner_enabled:
+                # Use shortener for Access Token verification (always for revenue)
+                if use_shortener:
                     try:
-                        verification_link = get_short(raw_link, client)
+                        # force_shorten=True bypasses shortner_enabled check for Access Token
+                        verification_link = get_short(raw_link, client, force_shorten=True)
+                        # Check if shortener actually worked (didn't just return original URL)
+                        if verification_link == raw_link:
+                            client.LOGGER(__name__, client.name).warning(f"Shortener returned original URL, check shortner settings")
                     except Exception as e:
                         client.LOGGER(__name__, client.name).warning(f"Shortener failed: {e}")
                         verification_link = raw_link  # Fallback to direct link
                 else:
-                    verification_link = raw_link  # Use direct link when shortener is OFF
+                    verification_link = raw_link
                 
                 short_photo = client.messages.get("SHORT_PIC", "")
                 short_caption = client.messages.get("SHORT_MSG", "").format(

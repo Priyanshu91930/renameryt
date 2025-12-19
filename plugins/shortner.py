@@ -14,12 +14,20 @@ def generate_random_alphanumeric():
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(8))
 
-def get_short(url, client):
-
-    # Check if shortner is enabled
-    shortner_enabled = getattr(client, 'shortner_enabled', True)
-    if not shortner_enabled:
-        return url  # Return original URL if shortner is disabled
+def get_short(url, client, force_shorten=False):
+    """
+    Shorten a URL using the configured shortener service.
+    
+    Args:
+        url: The URL to shorten
+        client: The bot client
+        force_shorten: If True, ignore shortner_enabled setting and always try to shorten
+    """
+    # Check if shortner is enabled (unless force_shorten is True)
+    if not force_shorten:
+        shortner_enabled = getattr(client, 'shortner_enabled', True)
+        if not shortner_enabled:
+            return url  # Return original URL if shortner is disabled
 
     # Step 2: Check cache
     if url in shortened_urls_cache:
