@@ -44,10 +44,10 @@ async def start_command(client: Client, message: Message):
         # 3. Check premium status
         is_user_pro = await client.mongodb.is_pro(user_id)
         
-        # 4. Check if shortner is enabled
+        # 4. Check if shortner is enabled (controls URL shortening only)
         shortner_enabled = getattr(client, 'shortner_enabled', True)
         
-        # 5. Check Access Token feature
+        # 5. Check Access Token feature (controls bot access)
         token_settings = await client.mongodb.get_access_token_settings()
         access_token_enabled = token_settings.get('enabled', False)
         validity_hours = token_settings.get('validity_hours', 12)
@@ -55,39 +55,42 @@ async def start_command(client: Client, message: Message):
         # Check if user has valid access token
         has_valid_access = await client.mongodb.check_user_access(user_id)
         
-        # 6. If user came from shortlink, grant access token (if access token feature is enabled)
+        # 6. If user came from verification link, grant access token (if access token feature is enabled)
         if is_short_link and access_token_enabled:
             await client.mongodb.grant_user_access(user_id, validity_hours)
             has_valid_access = True  # User now has access
             client.LOGGER(__name__, client.name).info(f"Access granted to user {user_id} for {validity_hours} hours")
 
-        # 7. Determine if user needs to pass shortlink
-        # Skip for: premium users, owner, users coming from shortlink
+        # 7. Determine if user needs to verify access
+        # Skip for: premium users, owner, users coming from verification link
         if not is_user_pro and user_id != OWNER_ID and not is_short_link:
             
-            # Determine if shortlink is required based on Access Token and Shortner settings
-            needs_shortlink = False
+            # Determine if verification is required
+            needs_verification = False
             
-            if access_token_enabled:
-                # Access Token is ON: User needs shortlink ONLY if they don't have valid access
-                if not has_valid_access:
-                    needs_shortlink = True
-                    client.LOGGER(__name__, client.name).info(f"User {user_id} has no valid access token, sending shortlink")
-                else:
-                    client.LOGGER(__name__, client.name).info(f"User {user_id} has valid access token, skipping shortlink")
-            elif shortner_enabled:
-                # Access Token is OFF but Shortner is ON: Always require shortlink
-                needs_shortlink = True
+            if access_token_enabled and not has_valid_access:
+                # Access Token is ON and user doesn't have valid access: Require verification
+                needs_verification = True
+                client.LOGGER(__name__, client.name).info(f"User {user_id} has no valid access token, sending verification link")
+            elif not access_token_enabled and shortner_enabled:
+                # Access Token is OFF but Shortner is ON: Always require shortlink (original behavior)
+                needs_verification = True
                 client.LOGGER(__name__, client.name).info(f"Shortner enabled (no access token), sending shortlink to user {user_id}")
             
-            if needs_shortlink:
-                # User needs to pass shortlink
-                try:
-                    short_link = get_short(f"https://t.me/{client.username}?start=yu3elk{base64_string}7", client)
-                except Exception as e:
-                    client.LOGGER(__name__, client.name).warning(f"Shortener failed: {e}")
-                    return await message.reply("Couldn't generate short link.")
-
+            if needs_verification:
+                # Build the verification link
+                raw_link = f"https://t.me/{client.username}?start=yu3elk{base64_string}7"
+                
+                # Use shortener only if enabled, otherwise use direct link
+                if shortner_enabled:
+                    try:
+                        verification_link = get_short(raw_link, client)
+                    except Exception as e:
+                        client.LOGGER(__name__, client.name).warning(f"Shortener failed: {e}")
+                        verification_link = raw_link  # Fallback to direct link
+                else:
+                    verification_link = raw_link  # Use direct link when shortener is OFF
+                
                 short_photo = client.messages.get("SHORT_PIC", "")
                 short_caption = client.messages.get("SHORT_MSG", "").format(
                     first=message.from_user.first_name
@@ -98,13 +101,13 @@ async def start_command(client: Client, message: Message):
                 if not tutorial_link or not tutorial_link.startswith(("https://", "http://")):
                     tutorial_link = "https://t.me/How_to_Download_7x/26"
 
-                # Validate short_link - must be a valid URL
-                if not short_link or not short_link.startswith(("https://", "http://")):
-                    client.LOGGER(__name__, client.name).warning(f"Invalid short_link: {short_link}")
+                # Validate verification_link - must be a valid URL
+                if not verification_link or not verification_link.startswith(("https://", "http://")):
+                    client.LOGGER(__name__, client.name).warning(f"Invalid verification_link: {verification_link}")
                     return await message.reply("⚠️ Unable to generate link. Please try again.")
 
                 # Log URLs for debugging
-                client.LOGGER(__name__, client.name).info(f"URLs - short: {short_link}, tutorial: {tutorial_link}")
+                client.LOGGER(__name__, client.name).info(f"URLs - verification: {verification_link}, tutorial: {tutorial_link}")
 
                 try:
                     await client.send_photo(
@@ -113,7 +116,7 @@ async def start_command(client: Client, message: Message):
                         caption=short_caption,
                         reply_markup=InlineKeyboardMarkup([
                             [
-                                InlineKeyboardButton("• ᴏᴘᴇɴ ʟɪɴᴋ", url=short_link),
+                                InlineKeyboardButton("• ᴏᴘᴇɴ ʟɪɴᴋ", url=verification_link),
                                 InlineKeyboardButton("ᴛᴜᴛᴏʀɪᴀʟ •", url=tutorial_link)
                             ],
                             [
@@ -122,8 +125,8 @@ async def start_command(client: Client, message: Message):
                         ])
                     )
                 except Exception as e:
-                    client.LOGGER(__name__, client.name).error(f"send_photo failed: {e}, short_link={short_link}, tutorial={tutorial_link}")
-                    await message.reply(f"⚠️ Link error. Try again later.\n\nDirect: {short_link}")
+                    client.LOGGER(__name__, client.name).error(f"send_photo failed: {e}, link={verification_link}, tutorial={tutorial_link}")
+                    await message.reply(f"⚠️ Link error. Try again later.\n\nDirect: {verification_link}")
                 return  # prevent sending actual files
 
         # 6. Decode and prepare file IDs
