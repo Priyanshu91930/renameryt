@@ -741,3 +741,61 @@ class MongoDB:
                 "admins": [],
                 "shortner_settings": {}
             }
+
+    # ✅ ACCESS TOKEN FUNCTIONS
+
+    async def set_access_token_settings(self, settings_data: dict):
+        """Store access token settings to database for persistence across bot restarts"""
+        await self.user_data.update_one(
+            {"_id": "access_token_settings"},
+            {"$set": {"settings": settings_data}},
+            upsert=True
+        )
+
+    async def get_access_token_settings(self) -> dict:
+        """Get access token settings from database"""
+        data = await self.user_data.find_one({"_id": "access_token_settings"})
+        return data.get("settings", {
+            "enabled": False,
+            "validity_hours": 12
+        }) if data else {"enabled": False, "validity_hours": 12}
+
+    async def update_access_token_setting(self, key: str, value):
+        """Update a single access token setting"""
+        current_data = await self.get_access_token_settings()
+        current_data[key] = value
+        await self.set_access_token_settings(current_data)
+
+    async def grant_user_access(self, user_id: int, hours: int):
+        """Grant temporary access to a user for specified hours"""
+        expiry = datetime.now() + timedelta(hours=hours)
+        await self.user_data.update_one(
+            {"_id": f"access_{user_id}"},
+            {"$set": {"expiry": expiry, "granted_at": datetime.now()}},
+            upsert=True
+        )
+
+    async def check_user_access(self, user_id: int) -> bool:
+        """Check if user has valid access token (not expired)"""
+        doc = await self.user_data.find_one({"_id": f"access_{user_id}"})
+        if not doc or "expiry" not in doc:
+            return False
+        return doc["expiry"] > datetime.now()
+
+    async def get_user_access_expiry(self, user_id: int) -> datetime:
+        """Get user's access token expiry time"""
+        doc = await self.user_data.find_one({"_id": f"access_{user_id}"})
+        return doc.get("expiry") if doc else None
+
+    async def get_renewed_users_count(self) -> int:
+        """Get count of users who have active (non-expired) access tokens"""
+        current_time = datetime.now()
+        count = await self.user_data.count_documents({
+            "_id": {"$regex": "^access_"},
+            "expiry": {"$gt": current_time}
+        })
+        return count
+
+    async def revoke_user_access(self, user_id: int):
+        """Revoke a user's access token"""
+        await self.user_data.delete_one({"_id": f"access_{user_id}"})

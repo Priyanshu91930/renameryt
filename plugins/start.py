@@ -46,52 +46,70 @@ async def start_command(client: Client, message: Message):
         
         # 4. Check if shortner is enabled
         shortner_enabled = getattr(client, 'shortner_enabled', True)
+        
+        # 5. Check Access Token feature
+        token_settings = await client.mongodb.get_access_token_settings()
+        access_token_enabled = token_settings.get('enabled', False)
+        validity_hours = token_settings.get('validity_hours', 12)
+        
+        # Check if user has valid access token
+        has_valid_access = await client.mongodb.check_user_access(user_id)
+        
+        # 6. If user came from shortlink, grant access token
+        if is_short_link and access_token_enabled:
+            await client.mongodb.grant_user_access(user_id, validity_hours)
+            has_valid_access = True  # User now has access
 
-        # 5. If user is not premium AND shortner is enabled, send short URL and return
+        # 7. If user is not premium AND shortner is enabled AND (access token disabled OR no valid access), send short URL
         if not is_user_pro and user_id != OWNER_ID and not is_short_link and shortner_enabled:
-            try:
-                short_link = get_short(f"https://t.me/{client.username}?start=yu3elk{base64_string}7", client)
-            except Exception as e:
-                client.LOGGER(__name__, client.name).warning(f"Shortener failed: {e}")
-                return await message.reply("Couldn't generate short link.")
+            # If access token is enabled and user has valid access, skip shortlink
+            if access_token_enabled and has_valid_access:
+                pass  # User has valid access token, proceed to get files
+            else:
+                # User needs to pass shortlink
+                try:
+                    short_link = get_short(f"https://t.me/{client.username}?start=yu3elk{base64_string}7", client)
+                except Exception as e:
+                    client.LOGGER(__name__, client.name).warning(f"Shortener failed: {e}")
+                    return await message.reply("Couldn't generate short link.")
 
-            short_photo = client.messages.get("SHORT_PIC", "")
-            short_caption = client.messages.get("SHORT_MSG", "").format(
-                first=message.from_user.first_name
-            )
-            tutorial_link = getattr(client, 'tutorial_link', "")
-
-            # Validate tutorial_link - must be a valid URL
-            if not tutorial_link or not tutorial_link.startswith(("https://", "http://")):
-                tutorial_link = "https://t.me/How_to_Download_7x/26"
-
-            # Validate short_link - must be a valid URL
-            if not short_link or not short_link.startswith(("https://", "http://")):
-                client.LOGGER(__name__, client.name).warning(f"Invalid short_link: {short_link}")
-                return await message.reply("⚠️ Unable to generate link. Please try again.")
-
-            # Log URLs for debugging
-            client.LOGGER(__name__, client.name).info(f"URLs - short: {short_link}, tutorial: {tutorial_link}")
-
-            try:
-                await client.send_photo(
-                    chat_id=message.chat.id,
-                    photo=short_photo,
-                    caption=short_caption,
-                    reply_markup=InlineKeyboardMarkup([
-                        [
-                            InlineKeyboardButton("• ᴏᴘᴇɴ ʟɪɴᴋ", url=short_link),
-                            InlineKeyboardButton("ᴛᴜᴛᴏʀɪᴀʟ •", url=tutorial_link)
-                        ],
-                        [
-                            InlineKeyboardButton(" • ʙᴜʏ ᴘʀᴇᴍɪᴜᴍ •", url="https://t.me/Premium_Fliix/21")
-                        ]
-                    ])
+                short_photo = client.messages.get("SHORT_PIC", "")
+                short_caption = client.messages.get("SHORT_MSG", "").format(
+                    first=message.from_user.first_name
                 )
-            except Exception as e:
-                client.LOGGER(__name__, client.name).error(f"send_photo failed: {e}, short_link={short_link}, tutorial={tutorial_link}")
-                await message.reply(f"⚠️ Link error. Try again later.\n\nDirect: {short_link}")
-            return  # prevent sending actual files
+                tutorial_link = getattr(client, 'tutorial_link', "")
+
+                # Validate tutorial_link - must be a valid URL
+                if not tutorial_link or not tutorial_link.startswith(("https://", "http://")):
+                    tutorial_link = "https://t.me/How_to_Download_7x/26"
+
+                # Validate short_link - must be a valid URL
+                if not short_link or not short_link.startswith(("https://", "http://")):
+                    client.LOGGER(__name__, client.name).warning(f"Invalid short_link: {short_link}")
+                    return await message.reply("⚠️ Unable to generate link. Please try again.")
+
+                # Log URLs for debugging
+                client.LOGGER(__name__, client.name).info(f"URLs - short: {short_link}, tutorial: {tutorial_link}")
+
+                try:
+                    await client.send_photo(
+                        chat_id=message.chat.id,
+                        photo=short_photo,
+                        caption=short_caption,
+                        reply_markup=InlineKeyboardMarkup([
+                            [
+                                InlineKeyboardButton("• ᴏᴘᴇɴ ʟɪɴᴋ", url=short_link),
+                                InlineKeyboardButton("ᴛᴜᴛᴏʀɪᴀʟ •", url=tutorial_link)
+                            ],
+                            [
+                                InlineKeyboardButton(" • ʙᴜʏ ᴘʀᴇᴍɪᴜᴍ •", url="https://t.me/Premium_Fliix/21")
+                            ]
+                        ])
+                    )
+                except Exception as e:
+                    client.LOGGER(__name__, client.name).error(f"send_photo failed: {e}, short_link={short_link}, tutorial={tutorial_link}")
+                    await message.reply(f"⚠️ Link error. Try again later.\n\nDirect: {short_link}")
+                return  # prevent sending actual files
 
         # 6. Decode and prepare file IDs
         try:

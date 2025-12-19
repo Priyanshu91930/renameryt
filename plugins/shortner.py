@@ -84,7 +84,7 @@ async def shortner_panel(client, query_or_message):
     
     reply_markup = InlineKeyboardMarkup([
         [InlineKeyboardButton(f'• {toggle_text} ꜱʜᴏʀᴛɴᴇʀ •', 'toggle_shortner'), InlineKeyboardButton('• ᴀᴅᴅ ꜱʜᴏʀᴛɴᴇʀ •', 'add_shortner')],
-        [InlineKeyboardButton('• ꜱᴇᴛ ᴛᴜᴛᴏʀɪᴀʟ ʟɪɴᴋ •', 'set_tutorial_link')],
+        [InlineKeyboardButton('• ꜱᴇᴛ ᴛᴜᴛᴏʀɪᴀʟ ʟɪɴᴋ •', 'set_tutorial_link'), InlineKeyboardButton('• ᴀᴄᴄᴇꜱꜱ ᴛᴏᴋᴇɴ •', 'access_token')],
         [InlineKeyboardButton('• ᴛᴇꜱᴛ ꜱʜᴏʀᴛɴᴇʀ •', 'test_shortner')],
         [InlineKeyboardButton('◂ ʙᴀᴄᴋ ᴛᴏ ꜱᴇᴛᴛɪɴɢꜱ', 'settings')] if hasattr(query_or_message, 'message') else []
     ])
@@ -257,4 +257,154 @@ async def test_shortner(client: Client, query: CallbackQuery):
     
     await query.message.edit_text(msg, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('◂ ʙᴀᴄᴋ', 'shortner')]]))
 
+#===============================================================#
+
+@Client.on_callback_query(filters.regex("^access_token$"))
+async def access_token_panel(client: Client, query: CallbackQuery):
+    """Display Access Token settings panel"""
+    if not query.from_user.id in client.admins:
+        return await query.answer('❌ ᴏɴʟʏ ᴀᴅᴍɪɴꜱ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ!', show_alert=True)
+    
+    await query.answer()
+    
+    # Get access token settings
+    token_settings = await client.mongodb.get_access_token_settings()
+    enabled = token_settings.get('enabled', False)
+    validity_hours = token_settings.get('validity_hours', 12)
+    renewed_count = await client.mongodb.get_renewed_users_count()
+    
+    enabled_emoji = "✅" if enabled else "❌"
+    status_text = "Enabled" if enabled else "Disabled"
+    
+    msg = f"""<blockquote><b>Access Token</b></blockquote>
+
+<i>Users need to pass a shortened link to gain special access to messages from all clone shareable links. This access will be valid for the next custom validity period.</i>
+
+~ <b>Status:</b> {status_text} {enabled_emoji}
+~ <b>Validity:</b> {validity_hours} hours
+~ <b>Renewed:</b> {renewed_count} users"""
+    
+    reply_markup = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton('Shorteners', 'shortner'),
+            InlineKeyboardButton('Validity', 'set_token_validity'),
+            InlineKeyboardButton('Tutorial', 'set_tutorial_link')
+        ],
+        [
+            InlineKeyboardButton('Back', 'settings'),
+            InlineKeyboardButton('Toggle Status', 'toggle_access_token'),
+            InlineKeyboardButton('Stats', 'token_stats')
+        ]
+    ])
+    
+    await query.message.edit_text(msg, reply_markup=reply_markup)
+
+#===============================================================#
+
+@Client.on_callback_query(filters.regex("^toggle_access_token$"))
+async def toggle_access_token(client: Client, query: CallbackQuery):
+    """Toggle Access Token feature on/off"""
+    if not query.from_user.id in client.admins:
+        return await query.answer('❌ ᴏɴʟʏ ᴀᴅᴍɪɴꜱ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ!', show_alert=True)
+    
+    # Get current status and toggle
+    token_settings = await client.mongodb.get_access_token_settings()
+    current_status = token_settings.get('enabled', False)
+    new_status = not current_status
+    
+    # Update in database
+    await client.mongodb.update_access_token_setting('enabled', new_status)
+    
+    # Update client attribute
+    client.access_token_enabled = new_status
+    
+    status_text = "ᴇɴᴀʙʟᴇᴅ" if new_status else "ᴅɪsᴀʙʟᴇᴅ"
+    await query.answer(f"✓ ᴀᴄᴄᴇss ᴛᴏᴋᴇɴ {status_text}!")
+    
+    # Refresh the panel
+    await access_token_panel(client, query)
+
+#===============================================================#
+
+@Client.on_callback_query(filters.regex("^set_token_validity$"))
+async def set_token_validity(client: Client, query: CallbackQuery):
+    """Set Access Token validity period in hours"""
+    if not query.from_user.id in client.admins:
+        return await query.answer('❌ ᴏɴʟʏ ᴀᴅᴍɪɴꜱ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ!', show_alert=True)
+    
+    await query.answer()
+    
+    token_settings = await client.mongodb.get_access_token_settings()
+    current_validity = token_settings.get('validity_hours', 12)
+    
+    msg = f"""<blockquote><b>Set Token Validity Period:</b></blockquote>
+<b>Current Validity:</b> <code>{current_validity} hours</code>
+
+<i>Send the new validity period in hours (1-720) in the next 60 seconds!</i>
+
+<b>Examples:</b>
+• <code>12</code> - 12 hours
+• <code>24</code> - 1 day
+• <code>168</code> - 1 week
+• <code>720</code> - 30 days"""
+    
+    await query.message.edit_text(msg)
+    try:
+        res = await client.listen(user_id=query.from_user.id, filters=filters.text, timeout=60)
+        hours_text = res.text.strip()
+        
+        if hours_text.isdigit():
+            hours = int(hours_text)
+            if 1 <= hours <= 720:
+                # Update in database
+                await client.mongodb.update_access_token_setting('validity_hours', hours)
+                
+                # Update client attribute
+                client.access_token_validity = hours
+                
+                await query.message.edit_text(f"**✓ ᴛᴏᴋᴇɴ ᴠᴀʟɪᴅɪᴛʏ ᴜᴘᴅᴀᴛᴇᴅ ᴛᴏ {hours} ʜᴏᴜʀs!**", 
+                                            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('◂ ʙᴀᴄᴋ', 'access_token')]]))
+            else:
+                await query.message.edit_text("**✗ ɪɴᴠᴀʟɪᴅ ᴠᴀʟᴜᴇ! ᴍᴜsᴛ ʙᴇ ʙᴇᴛᴡᴇᴇɴ 1 ᴀɴᴅ 720 ʜᴏᴜʀs.**", 
+                                            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('◂ ʙᴀᴄᴋ', 'access_token')]]))
+        else:
+            await query.message.edit_text("**✗ ɪɴᴠᴀʟɪᴅ ɪɴᴘᴜᴛ! ᴘʟᴇᴀsᴇ sᴇɴᴅ ᴀ ɴᴜᴍʙᴇʀ.**", 
+                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('◂ ʙᴀᴄᴋ', 'access_token')]]))
+    except ListenerTimeout:
+        await query.message.edit_text("**⏰ ᴛɪᴍᴇᴏᴜᴛ! ᴛʀʏ ᴀɢᴀɪɴ.**", 
+                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('◂ ʙᴀᴄᴋ', 'access_token')]]))
+
+#===============================================================#
+
+@Client.on_callback_query(filters.regex("^token_stats$"))
+async def token_stats(client: Client, query: CallbackQuery):
+    """Display Access Token statistics"""
+    if not query.from_user.id in client.admins:
+        return await query.answer('❌ ᴏɴʟʏ ᴀᴅᴍɪɴꜱ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ!', show_alert=True)
+    
+    await query.answer()
+    
+    # Get stats
+    token_settings = await client.mongodb.get_access_token_settings()
+    enabled = token_settings.get('enabled', False)
+    validity_hours = token_settings.get('validity_hours', 12)
+    renewed_count = await client.mongodb.get_renewed_users_count()
+    
+    msg = f"""<blockquote><b>📊 Access Token Statistics</b></blockquote>
+
+<b>Current Settings:</b>
+• <b>Status:</b> {"✅ Enabled" if enabled else "❌ Disabled"}
+• <b>Validity Period:</b> {validity_hours} hours
+
+<b>Usage Stats:</b>
+• <b>Active Tokens:</b> {renewed_count} users
+• <b>Tokens grant access for:</b> {validity_hours} hours
+
+<i>Active tokens = users who can access files without shortlink</i>"""
+    
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton('◂ ʙᴀᴄᴋ', 'access_token')]
+    ])
+    
+    await query.message.edit_text(msg, reply_markup=reply_markup)
 
