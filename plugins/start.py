@@ -321,7 +321,7 @@ async def start_command(client: Client, message: Message):
 
     # 9. Normal start message
     else:
-        buttons = [[InlineKeyboardButton("⚡ Open Viral Verse", url="https://t.me/premiumcollection467832_bot/start"), InlineKeyboardButton("📢 Join Our Channel", url="https://t.me/Anihubyt25")]]
+        buttons = [[InlineKeyboardButton("⚡ Open Viral Verse", url="https://t.me/premiumcollection467832_bot?start=viralverse"), InlineKeyboardButton("📢 Join Our Channel", url="https://t.me/Anihubyt25")]]
         if user_id in client.admins:
             buttons.insert(0, [InlineKeyboardButton("⛩️ ꜱᴇᴛᴛɪɴɢꜱ ⛩️", callback_data="settings")])
 
