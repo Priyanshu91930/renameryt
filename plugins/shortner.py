@@ -44,9 +44,14 @@ def get_short(url, client, force_shorten=False):
         rjson = response.json()
 
         if rjson.get("status") == "success" and response.status_code == 200:
-            short_url = rjson.get("shortenedUrl", url)
-            shortened_urls_cache[url] = short_url
-            return short_url
+            shortened_url = rjson.get("shortenedUrl", url)
+            # Validate that the shortened URL is a proper URL for Telegram buttons
+            if shortened_url and shortened_url.startswith(("https://", "http://")):
+                shortened_urls_cache[url] = shortened_url
+                return shortened_url
+            else:
+                print(f"[Shortener Warning] Invalid URL returned: {shortened_url}")
+                return url  # Return original if shortened URL is invalid
     except Exception as e:
         print(f"[Shortener Error] {e}")
 
